@@ -1,0 +1,36 @@
+node
+{
+def mavenHome = tool name: "Maven-3.9.1"
+
+properties([buildDiscarder(logRotator(artifactDaysToKeepStr: '90', artifactNumToKeepStr: '5', daysToKeepStr: '90', numToKeepStr: '5')), pipelineTriggers([pollSCM('* * * * * ')])])
+
+stage('GitHubCheckout')
+{
+git branch: 'development', credentialsId: 'cd765832-ec7e-44c1-ae90-0c9f8f1e9223', url: 'https://github.com/MithunTechnologiesDevOps/maven-web-application.git'
+}
+stage('Build')
+{
+sh "${mavenHome}/bin/mvn clean package"
+}
+stage('executeSonarCubeReport')
+{
+sh "${mavenHome}/bin/mvn sonar:sonar"
+}
+stage('uploadArtifact')
+{
+sh "${mavenHome}/bin/mvn deploy"
+}
+stage('TomCatDeployment')
+{
+sshagent(['e74d0c32-3fa4-4303-84e7-41cb1f34a569']) 
+{
+}
+}
+stage('sendEmailNotification')
+{
+emailext body: '''Build done
+
+Regards,
+Vamsidhar reddy.''', subject: 'build done', to: 'devops100000@gmail.com'
+}
+}
